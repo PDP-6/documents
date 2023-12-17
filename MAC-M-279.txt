@@ -1,0 +1,1152 @@
+                MASSACHUSETTS INSTITUTE OF TECHNOLOGY
+
+                             PROJECT MAC
+Artificial Intelligence
+Memo. No. 90                                          MAC-M-279
+Revised: October 1968                                 October 1965
+
+                                MIDAS
+
+                             Peter Samson
+
+                MASSACHUSETTS INSTITUTE OF TECHNOLOGY
+
+                             Project MAC
+
+                                                   Memorandum MAC MAC-M268
+
+                                                   January 31, 1966
+
+                                                   Attached to A.I. Memo. 90
+                                                   "MIDAS"  (MAC-M-279)
+
+TO:       PDP-6 USERS
+
+FROM:     Peter Samson
+
+SUBJECT:  Linking Loader for MIDAS
+
+     The MIDAS Linking Loader is a PDP-6 program to load relocatable-
+format output from the MIDAS assembler, with facilities to handle
+symbolic cross-references between independently assembled programs.
+Although it is arranged primarily to load from DECtape, the loader is
+able also to load paper-tape relocatable programs.
+
+To use the loader, load it off the MACDMP SYSTEM tape as the file STINK .
+(A file STINK NEW may exist, repairing old bugs or introducing new
+features.)  Then the loader expects commands to be typed in on the on-
+lineTeletype; two successive ALT MODE characters terminate the string
+of commands.  The commands in a string are not performed until the string
+is thus terminated.  While a command string has not been terminated,
+RUBOUT will erase the last typed-in character (and type it out again as
+a reminder).  A command string may contain any number of commands, and
+the effect is the same whether the commands are together in one string
+or are in successively typed-in strings each delimited by two ALT MODEs.
+
+The loader maintains two tables whose contents may change as programs
+are loaded: (a) the Loader Table, which contains definitions of global
+symbols and unresolved virtual usages; (b) the local symbol table,
+containing all program names, and the local symbols for each program
+for which their loading was requested.
+
+In the following command descriptions, n is an octal number, or one of
+the command characters said to have a value.   $  is ALT MODE, which
+echoes out as  $ .     represents SPACE .
+
+command form       Meanings
+P                  Set to read from the paper tape reader.  (Tape must
+                            be in the reader, and the reader must be on
+                            when this command is performed.)
+
+nMname 1,name2 $   Set to read from beginning of file name1 name2 on
+                            DECtape unit n .  (If n is omitted, the last
+                            DECtape mentioned is assumed.)
+
+N                  Load selected input file without local symbols.
+
+                                  -2-
+
+
+
+
+                   Load selected input file saving local symbol definitions
+                            for DDT.  (N and L set the Current Starting
+                            Address to that specified in the program
+                            loaded if that is not 0.)
+
+                   Copy all defined global symbols in the Loader Table
+                            into the local symbol table (for DDT); then
+                            delete same from the Loader Table.
+
+                   Read in the relocatable version of DDT from DECtape
+                            unit 1, tell it of all symbols in the local
+                            symbol table; wipe out the loader and transfer
+                            control to DDT.
+
+                   List files of DECtape unit n . (As in the M command,
+                            the argument n may be omitted.)
+
+                   Transfer control to the Current Starting Address.
+
+                   Set the Current Starting Address to n and transfer
+                            control thereto.
+
+                   Print the value of n as an octal integer.
+
+                   Has the value of the Current Starting Address.
+
+                   Has the value of the lowest address currently used
+                            by the loader.
+
+                   Delete all local and global symbols from the local
+                            symbol table and the Loader Table.
+
+                   Zero core except registers 20 through 37 and the loader
+                            (from E up).
+
+                   Print contents of location n .
+
+                   Has the current value of program relocation.
+
+                   Set program relocation to n .
+
+                   Set common relocation to n .
+
+                   Print storage map:  Each program in core has one line
+                            in the map.  At the left is the program name,
+                            and at the right in octal is a word whose
+                            right half is the first location used by the
+                            program and whose left half is the last
+                            location used by the program.
+
+                                  -3-
+
+
+
+
+?                  Print storage map and missing list (short form).  Each
+                            program loaded appears as follows:  one line
+                            with the program name at the left and the first
+                            address used by the program at the right; any
+                            number of lines indented one space, each listing
+                            an undefined symbol used i the program, with
+                            the address of its first use therein.  Symbols
+                            are global unless preceded by * meaning local.
+
+n?                 Print storage map and missing list (long form).  (Here
+                            the value of n is immaterial, but an argument
+                            must be given.)  Like ? with the following
+                            changes:  (a) following the program name is a
+                            36-bit word in octal with first and last addresses
+                            as for the S command; (b) the address is given
+                            of each reference to each undefined symbol.
+
+n<sym>             Defined symbol sym with the value n . The symbol will be
+                            global unless a * is typed somewhere between
+                            < and > .
+
+
+Error message
+SCE   adr          Storage capacity exceeded.  The program being Gloaded
+                            collided with the loader at adr .
+
+UGA  adr  sym      Undefined global assignment.  The global symbol sym
+                            was undefined when needed by the loader to
+                            perform a parameter assignment or location
+                            assignment.  The current loading address is
+                            adr .
+
+MDG  adr  sym      Multiply defined global.  A defined global appeared to
+                            the left of a : when adr , the current location,
+                            did not equal the value of the global.  It was
+                            not redefined.
+
+CKS                Checksum error.
+
+FNF                File not found on DECtape specified.
+
+TMS  num           Too much symbols:  occurs when loading DDT, and means
+                            that DDT + symbols + program exceeds storage
+                            available by num registers.
+
+ILM                Illegal memory reference:  an error by the loader.
+
+                                  -4-
+
+
+
+
+A tape labelled LIBRARY is available, containing various useful sub-
+routines in the file LIBRAR l .  Up-to-date details are posted in the
+PDP-6 room.  Each program in the library file was assembled with the
+.LIBRA pseudoinstruction, and so will be loaded only if the Loader
+Table is a request for a global symbol defined in that program.  There-
+fore the library file should not be loaded until all programs have been
+loaded which make reference to the library subroutines.
+
+Command string Examples.
+
+(a1)   To load the program ALPHA RALPHA from DECtape unit 3, the program
+       SUBR 1 from unit 2, and the program   BR   from unit 2; then to
+       get a storage map and missing list:
+
+       3MALPHA RALPHA $ L2MSUBR 1 $ LMSUBR 2 $ L? $ $
+
+       In this example, L was used for each program to load its local
+       symbols.  The N command could have been used in each case instead
+       not to local local symbols.
+
+(a2)   Then to go to DTT:
+
+       TD $ $
+
+(b)    To load the program in the paper-tape reader and transfer to its
+       starting address:
+
+       PNG $ $
+
+       The L command was not used here because DDT was not requested.
+
+(c)    To load PROG REL from DECtape unit 1 and the requested library
+       routines from unit 4:
+
+       lMPROG REL $ L4MLIBRAR 1 $ N $ $
+
+                                  -2-
+
+
+
+MIDAS is a PDP-6 assembly program.  Its input is a symbolic-language file
+
+either of paper tape punched in ASCII code, or a DECtape ASCII-mode file
+
+according to the MAC file format (see3 MAC-M-249).  The output of MIDAS is
+
+a binary file -- either a paper tape or a SBLK or RELOC-mode file on DECtape.
+
+The input language is format-free, meaning that the value or use of a word
+
+in the input does not depend on its position in a line or on the page, but
+
+instead upon the characters (such as colon, comma, and carriage return) which
+
+delimit it.
+The output of MIDAS consists primarily of storage words:  36-bit quantities
+
+intended to be placed in memory locations when the file is loaded.  Also in
+
+the output file usually a symbol table -- a list of names and values of all
+
+symbols defined by the programmer - is included for use with DDT (see DEC-6-
+
+0-UP-DDT-UM-FP-ACT00 and A.I. Memo. No. 147, "A Multiple Procedure DDT")
+
+The programmer may select one of several formats for his binary output: one
+
+of them, relocatable, allows him to make symbolic cross-references between
+
+independently assembled programs.
+
+The MIDAS symbolic language provides a wide variety of ways the programmer
+
+may express quantities of interest to him:  as PDP-6 machine instructions,
+
+integer to any of several radices, floating point numbers, half-words, character
+
+strings, etc.  In addition it has a variety of features (e.g. macroinstructions
+
+and indefinite repeat) for substitution and repitition of character strings
+
+comprising input to MIDAS.
+
+The original specifications for MIDAS were undertaken in the winter of 1963-4
+
+by members of the Tech Model Railroad Club, including Messrs. Frazier, Greenblatt,
+
+Gross, Holloway, Kotok, Nelson, Eggers and Samson.  Since then, most of the
+
+work on the assembler has been done by Mr. Greenblatt who is now managing the
+
+maintenance and development of MIDAS.  The corresponding position regarding
+
+the MIDAS linking loader is held by Mr. Holloway.
+
+                                  -3-
+
+
+                         SYNTAX OF CHARACTERS
+                       Appearing in Value Words
+
+     !                     ignored except to separate dummy symbol names
+
+A,B,....,Y,Z               syllable constituents
+
+0,1,....,8,9                - " -
+
+     $, %                   - " -
+
+      .                     - " -
+
+     ' "                    - " -
+
+     _                     intra-syllable operators
+
+     ^                      - " -
+
+     +                     syllable separators
+
+     -                      - " -
+
+     *                      - " -
+
+     /                      - " -
+
+     &                      - " -
+
+     #                      - " -
+
+     \                      - " -
+
+     sp, ht                field separators       the symbol __ will be
+                                                  used to stand for any
+       ,                    - " -                 single field separator
+
+  cr,lf,ff,vt              word terminators       the symbol <- will be
+                                                  used to stand for any
+      ?                     - " -                 one character of the
+                                                  set cr,lf,ff,vt
+      ;                     - " -
+
+      :                     - " -
+
+      =                     - " -
+
+     ( )                   delimit syllable from without;
+                           delimit word within
+     < >                    - " -
+                           
+     [ ]                    - " -
+
+      @                    indirect bit;    @ may appear anywhere in a word
+
+                                  -4-
+
+
+
+SYLLABLES
+
+The elementary unit of meaning in MIDAS is the syllable.  Depending upon its
+
+form and upon how it was defined, a syllable may be a number, a symbol, a
+
+macro name, a pseudoinstruction, a quoted character, or one of several kinds
+
+of bracketed word.  A pseudoinstruction directs some action on the part of
+
+MIDAS; a macro name stands for a string of characters; other syllables (termed
+
+valued syllables) represent numeric quantities, which as 36 bits in size.
+
+Such a quantity is the value of the syllable.  Associated with each valued
+
+syllable is a relocation:  a quantity which is either 0 or 1 . The value of
+
+some syllables may be virtual, meaning that value is not know at assembly
+
+time but will become known as the program is loaded.  Virtual quantities have
+
+a relocation of 0.
+
+
+
+NUMBERS
+
+A string of digits forms an integer with its expressed numeric value and 0
+
+relocation.  The number is interpreted in the current radix.  An integer
+
+ended by ' (single quote) is however taken as in base 8; and an integer ended
+
+by . (period) is taken in base 10.  An integer may be followed by ^ followed
+
+by an integer;:
+
+         A ^ B, where A and B a integers, means that integer
+
+         A * Ra^B with Ra being the radix in which A is expressed.
+
+A string of digits with . (period) to the left of some digit is a floating-point
+
+number; decimal radix is assumed.  A floating-point number may be followed by
+
+^ integer, and the result is a floating point number:  e.g. 3.5 ^ 4 means the
+
+                                  -5-
+
+
+
+same as 35000.0 .  Any of these numeric formats may be followed by _ integer,
+
+which multiplies the current value by 2^INTEGER .   (The exponent integer may
+
+be terminated by ' or . to force its radix; otherwise it used the current radix.)
+
+The result is a fixed-point integer.  For instance, 1.5 _ 3 = 14'; and
+
+17' _ 3 = 170'.
+
+
+
+SYMBOLS
+
+A string of syllable constituents, which includes at least one letter, or at
+
+least one $ or % , or at least two . (periods), or which consists of the
+
+single character . (period) is a name.  Only the first six characters of a
+
+name are used by the assembler.  A name may be defined as a symbol, a macro
+
+name, or a pseudoinstruction.  A symbol is a valued syllable.
+
+    One may write syllable1 _ syllable2 which takes syllable2 as an integer
+
+which may not be virtual, and must have 0 relocation; the expression means
+
+syllable1*2^syllable2.  If either syllable contains any operators whatsoever
+
+it must be a bracketed word.  If syllable1 is virtual, or has 1 relocation,
+
+the value of syllable2 must be less than 2^10.
+
+If the characters ' (single quote) appears to the right of a character in a
+
+symbol, it declares that symbol to be a variable.  MIDAS forms a list of
+
+distinct variables, which become defined, at the first subsequent use of the
+
+pseudoinstruction VARIAB or END, as unique memory locations.
+
+If " (double quote) follows any character in a symbol, it declares that symbol
+
+global.  If a global symbol is NOT defined in the program where it appears its
+
+                                  -6-
+
+
+
+value is virtual, to be supplied by the loader.  If a global symbol is defined
+
+in the program, its value is passed on to the loader and there may resolve
+
+virtual quantities in other programs.
+
+
+
+. AND $.; THE CURRENT LOCATION
+
+MIDAS maintains an 18-bit quantity (with 1-bit relocation) called the current
+
+location counter.  Its value, is that address into which the next storage word
+
+will be assembled.  The current location may be set by use of the pseudoinstruction
+
+LOC; it is advanced by 1 with each storage word assembled, and by some amount
+
+at each use of the pseudoinstructions BLOCK, CONSTA, VARIAB and END.  By use
+
+of LOC the current location may become virtual.
+
+MIDAS also maintains the offset:  a 36-bit-&-relocation quantity.  This
+
+normally has value 0, relocation 0 but may be set otherwise by  the OFFSET
+
+pseudoinstruction.
+
+The symbol . (period) always has the value (and relocation) of Current
+
+Location plus Offset.  For instance (assuming offset = 0), in ADD [SUB .]
+
+the . refers to the location of the ADD, not that of the SUB.
+
+The symbol $." is virtual.  It is the address where the loader is about to
+
+put a storage word.  So in ADD [SUB $."] (regardless of any offset) the $."
+
+has the value of the location where the SUB is to be put.
+
+The virtual symbol $R." stands for the loader relocation, i.e. the amount that
+
+the loader adds to the value of each quantity (including the location counter)
+
+which has a relocation of 1.
+
+                                  -7-
+
+
+
+QUOTED CHARACTERS
+
+If '(single quote) or "(double quote) or ^(up arrow) appears without
+
+a syllable constituent immediately to its left, the quote (or arrow) and the
+
+character immediately to its right are taken as a syllable with the
+
+value of the sixbit,or ASCII code, or ASCII anded with 77oct, for the
+
+character, respectively.  e.g., 'A means 41'; "+ means  53', ^Q means 21'.
+
+
+
+BRACKETED WORDS
+
+<word>           is a syllable with the value of word, where word is a word.
+
+(word)           If the ( is immediately preceded by a syllable-separating
+
+                 character, is a syllable whose value is words, the value of
+
+                 word with left and right halves swapped.
+
+[word]           is a constant syllable, and word in this case is called a
+
+                 constant word.  As MIDAS assembles a program it forms a list
+
+                 of distinct constant words, and at the appearance of the
+
+                 pseudoinstruction CONSTA or END a number of locations is
+
+                 reserved equal to the number of constant words outstanding.
+
+                 Each constant word is assembled to appear in a unique one of
+
+                 these locations.  Then, each constant syllable which refers
+
+                 to a certain constant word is given the value of the address
+
+                 of that constant word.  Last, the table of constant words
+
+                 is reset to contain none.
+
+                                  -8-
+
+
+
+FIELDS
+
+A valued syllable is a field; and two or more valued syllables may be combined
+
+to form a field by means of the syllable separators + - * / \ # and & .
+
+These perform respectively 36-bit integer operations of addition, subtraction,
+
+multiplication, division  (will truncate quotient) and bitwise Boolean OR,
+
+XOR, and AND.  All &'s are performed first, then all #'s, then \'s, then all
+
+*'s and /'s; last, + and - .  Operators of the same hierarchy are performed in
+
+order from left to right.
+
+
+
+WORDS
+
+One or more fields connected by field separators form a word.  The two field
+
+separators are space (or horizontal tab), and comma.  (Space and h.tab are
+
+synonymous and will both be called spaces.)  Spaces before and after a word
+
+are ignored.  More than one space in a row are treated as one.  Spaces adjacent
+
+to a comma are ignored.
+
+The values of the fields are combined to form the value of the word according
+
+to the number of fields and the pattern of field separators, as detailed in
+
+the following chart.
+
+                                  -9-
+
+                             FORMAT TABLE
+
+             (A, B, and C stand for fields)
+
+format number           pattern                value
+  in octal
+-------------------------------------------------------------------------------
+
+13                      ,,C                    unassigned
+
+14                      ,A                     A & 777777
+
+15                      ,A C                   unassigned
+
+16                      ,A,                    unassigned
+
+17                      ,A,C                   unassigned
+
+20                      A                      A
+
+21                      not possible
+
+22                      not possible
+
+23                      not possible
+
+24                      A B                    A ++ B & 777777
+
+25                      A B C                  A ++ B & 777777 ++ C & 777777
+
+26                      A B,                   A + <B & 17> _ 23.
+
+27                      A B,C                  A + <B & 17> _ 23. ++ C & 777777
+
+30                      A,                     A
+
+31                      not possible
+
+32                      A,,                    <A & 777777> _ 18.
+
+33                      A,,C                   <A & 777777> _ 18.
+
+34                      A,B                    A ++ B & 777777
+
+35                      A,B C                  unassigned
+
+36                      A,B,                   unassigned
+
+37                      A,B,C                  unassigned
+
+
+
+The sign ++ means addition with carry suppressed from bit 18 to bit 17.
+
+                                  -10-
+
+
+
+In the case of four or more fields in a word, the first three are treated
+
+according to the chart and all subsequent field,s regardless of separators,
+
+are treated like field C.
+
+
+If in a word appears (word) with the character to the left of the ( other
+
+than + - * / \ # or & , the swapped value of the word within the parentheses
+
+is saved and at the end of the outer word is added into the word being formed.
+
+
+Anywhere in a word may appear the character @ .  The ONLY effect of this is
+
+that when the word has been evaluated, the indirect bit, 1 _ 22., is ORed
+
+into the value.  The @ does not terminate syllables or fields, nor is it taken
+
+   part of a syllable or field.
+
+
+Certain symbols form the MIDAS initial symbol table.  Any of these which represent
+
+PDP-6 machine instructions (except the 8 i-o instructions) may be independently
+
+defined by the programmer, in which case both values are available to MIDAS.
+
+When the symbol appears in the left most field of a word it assumes the initial
+
+value; otherwise, the new value.
+
+
+
+WORD USES
+
+name:                       makes name a symbol with value, relocation and
+                            virtuality equal to those of the Current Location.
+
+name=word <-            makes name a symbol with value, relocation and
+                            virtuality of word.
+
+name==word <-           same as a name=word <- , but also has the effect, when
+                            the symbol table is read by DDT, of "half-killing"
+                            the symbol name in DDT's symbol table.
+
+                                  -11-
+
+
+
+word <-                 word is taken as a storage word.
+
+word?                       (a series of <- characters with no intervening
+                            word creates no storage words and does not change
+                            the Current Location Center.
+
+word;text lf                word is taken as a storage word, and the text from
+                            the ; to the first line feed is ignored.
+
+
+    NOTE: If <- or ; terminates a word it automatically closes all open ([
+
+    and < groupings.  Hence ADD [(3 <- is the same as ADD [(3)] <- .
+
+
+
+PSEUDOINSTRUCTIONS   PART I
+
+     Any arguments supplied to the following pseudoinstructions in excess of
+
+those needed are ignored.
+
+<-
+
+
+LOC __ word <-              sets the Current Location Counter to the right
+                            18 bits of the value of word, with the relocation
+                            and virtuality of word.
+
+BLOCK __ word <-            sets the Current Location Counter to the right
+                            18 bits of the sum of its previous value and the
+                            value of word.
+                        
+
+END __ word <-              This marks the end of the program, and the right
+                            18 bits of the value of the word, and its relocation,
+                            are saved as the program starting address.  The END
+                            also acts as VARIAB and CONSTA, in that order, if
+                            there are any constant words or variables undefined.
+
+XWORD __ field1 __ field2 <-      Same as (,field1 ), field2)
+XWD   __ field1 __ field2 <-      Same as (,field1 ), field2)
+
+EXP __ word <-                    Same as word <-
+
+.OP __ field1 __ field2 __ field3 __
+                                  This is a syllable and so may have syllable-
+                                  combining operators to its left and at the
+                                  right of the last __ .  The value of the
+                                  syllable is the result of performing field1
+                                  as a PDP-6 instruction with field2 in the
+
+                                  -12-
+
+
+
+                                  specified accumulator and field3 in the
+                                  specified memory location.  The value of
+                                  .OP is the resulting contents of the
+                                  accumulator.
+
+OCTAL                             Sets current radix to 8
+
+DECIMAL                           Sets current radix to 10.
+
+RADIX __ word <-                  Sets current radix to value of word.
+
+CONSTA <-                         Reserves space where it appears for all
+                                  unassigned constant words.
+
+VARIAB <-                         Reserves space where it appears for all
+                                  undefined variables.
+
+NULL <-                           has no effect.  Any number of arguments
+                                  may be given and will have no effect.
+
+EQUALS __ name1 __ name2 <-       name1 is made a synonym of name2 and may
+                                  be used anywhere instead of name2.  This
+                                  pseudoinstruction is generally used upon
+                                  macros and pseudoinstructions rather than
+                                  symbols.
+
+TITLE __ string lf                The string of characters through the first
+                                  line feed is the title of the program, and
+                                  is printed out when the TITLE pseudoinstruction
+                                  is encountered on each pass of the assembly.
+                                  The program name, which may be used by DDT,
+                                  is set to the first 6 characters of the
+                                  first syllable in the title.
+
+OFFSET __ word <-                 The Offset is set to the value and relocation
+                                  of word.
+
+SQUOZE __ field, symbol           Is a syllable with value equal to the radix-50
+                                  representation of symbol plus < field & 17 > _ 30.
+
+ASCII jtextj                      where j is any ASCII character, and text is
+                                  any string of ASCII characters not containing
+                                  j:  generates one or more storage words,
+                                  containing each five 7-bit characters of the
+                                  text, from left to right left-justified in
+                                  successive words (in order that can be read
+                                  with ILDB).  If j is a syllable, field, or
+
+                                  -13-
+                                  
+
+
+                                  word-separator other then space,the space
+                                  after ASCII can be omitted.  The entire
+                                  usage is treated as a syllable:  any
+                                  syllable-combining operators at its left
+                                  act upon the first storage word it
+                                  generates, and any syllable-combining
+                                  operators to its right act upon the last
+                                  storage word it generates.
+
+ASCIZ jtextj                      like ASCII, but if number of characters in
+                                  text is divisible by 5, assembles final
+                                  additional storage word of 0.
+
+.ASCII jtextj                     like ASCIZ; but also when the character ! is
+                                  encountered in the text takes the field
+                                  following it, evaluates that field, creates
+                                  the character string representing that value
+                                  in octal digits, and puts that character
+                                  string into the assembled text storage words
+                                  instead of the ! and field.
+
+SIXBIT jtextj                     Same action as ASCII, but puts six sixbit
+                                  characters to the word.
+
+.FNAM1                            In time-sharing version only  .FNAM1 and
+.FNAM2                            .FNAM2 correspond respectively to the sixbit
+                                  code for the first and second subnames of the
+                                  source file (See Operating Instructions).
+                                  For example, if the source file name is
+                                  RANDOM PROG, .FNAM1 has the same numeric
+                                  value as SIXBIT /RANDOM/ .
+
+PRINTC jtextj                     Takes a text argument identical in form to
+                                  that of ASCII, and prints the text on-line
+                                  when the pseudoinstruction is met on each
+                                  pass of the assembly.  No storage words are
+                                  created.
+
+PRINTX jtextj                     Same as PRINTC, but suppresses type-out
+                                  of the character ! .
+
+EXPUNG __ name1 __ name2 __ ... __ namen <-
+                                     Each name is expunged, i.e., deleted from
+                                     the symbol table;  and effectively forgotten
+                                     by MIDAS.
+
+                                  14.
+
+.BEGIN <-                         The code appearing between .BEGIN and its
+.END <-                           matching .END is termed a program block
+                                  (not to be confused with a DECtape block,
+                                  a logical block of assembler output, or
+                                  a group of locations spaced over by the
+                                  BLOCK pseudoinstruction).  All symbol
+                                  definitions effected within a program
+                                  block are "undone" at the .END, and such
+                                  symbols regain the values they had at the
+                                  .BEGIN.  Program blocks may be nested.
+
+CONI  field1, field2 <-           The eight PDP-6 i-o instructions are defined
+CONO  field1, field2 <-           as pseudoinstructions to MIDAS.  If they
+CONSZ field1, field2 <-           appear in the leftmost field of a word, then
+CONSO field1, field2 <-           for that word the evaluation rules for
+DATAI field1, field2 <-           certain word formats changes according to
+DATAO field1, field2 <-           the following table; and the i-o instruction
+BLKI  field1, field2 <-           otherwise acts as a symbol with the value
+BLKO  field1, field2 <-           shown in the Initial Symbol Table.
+
+format number                 pattern             value
+   in octal
+
+      26                      A B,                A + <B & 177> _ 26.
+      27                      A B, C              A + <B & 177> _ 26. ++ C & 777777
+
+.FORMA __ no, fs                  Inserts an entry in the format table (i.e.,
+                                  replaces old entry) for format number no
+                                  (see format table on Page 9).  The numeric
+                                  value of field fs is taken as three 12-bit
+                                  bytes referring to the (up to) three distinctly
+                                  handled fields in a word:  the left 12 bits
+                                  refer to the right most field, the middle
+                                  12 bits to the field next to the right most
+                                  (if any) and the right 12 bits to the field
+                                  2 from the right and any additional field.s
+                                  (If there is only one field in a given format
+                                  it is the rightmost regardless of punctuation
+                                  which may be required after it.)
+                                  A 12-bit byte describing a particular field
+                                  is in turn treated as two 6-bit bytes.  The
+                                  right 6-bit byte specifies a mask and the
+                                  left 6-bit byte specifies a shift.  The mask
+                                  number (say m) directs that only the right
+                                  m bits of the field value be taking the shift
+                                  number (say s) directs that the bits
+                                  remaining after masking be shifted left s bits.
+                                  The fields, after this masking and shifting
+                                  are added to give the value of the word.
+                                  (Example: the 12-bit specification 2704oct
+                                  describes and accumulator field:
+                                                                <f&17> _ 23.
+
+                                  15.
+
+
+
+
+
+
+                                  There are three exceptions to the above
+                                  procedure. (1) If a field is specified
+                                  as 0022oct (right half, not shifted) the
+                                  carry out of bit 18 is suppressed as the
+                                  field is added into the word.  (2) A
+                                  virtual quantity may only occur in a field
+                                  specified 0044oct, 0022oct, 2222oct, 0504oct  or
+                                  2704oct.  (3) If as a syllable in the left-
+                                  most field of a word appears any of the
+                                  eight i-o instructions (DATAO, DATAJ,
+                                  CONO, CONI, BLKC, BLKJ, CONSZ, CONSO)
+                                  then any field in that word specified
+                                  2704oct is instead taken as if specified
+                                  3211oct (i-o device field).
+
+
+
+.LENGT jtextj                     (text argument as for ASCII) this is a
+                                  syllable with the value of the number of
+                                  characters in the text.
+
+
+
+.TYPE name                        is a syllable whose value depends on the
+                                  nature (at that point) of the name name.
+
+                                  value (octal)       if name is a
+                                  1                   pseudoinstruction or macroname
+                                  2                   defined symbol (not global,
+                                                                   not a variable)
+                                  3                   undefined local symbol
+                                  4                   defined local variable
+                                  5                   undefined local variable
+                                  6                   defined global variable
+                                  7                   undefined global variable
+                                  10                  defined global symbol (not a
+                                                                          variable
+                                  11                  undefined global symbol (not
+                                                                      a variable)
+                                  17                  unseen (except in .TYPE)
+
+                                  16.
+
+
+
+
+
+PSEUDOINSTRUCTIONS   PART II.
+
+The foregoing sections described those features of the MIDAS language which
+
+(generally) handle numeric values; these features should be sufficient to the
+
+casual user, and adequate for a majority of MIDAS-language programs.  The
+
+following sections describe the character-string-handling features of MIDAS,
+
+primarily macroinstructions, REPEAT and IRP (indefinite repeat).  MIDAS takes
+
+each usage of such pseudo- or macroinstructions and translates that string of
+
+characters into a new character string (according to the rules below) which is
+
+fed back as input to MIDAS.  (See sketch)
+
+
+                                 results of
+                              macros & repeats
+                              _______________
+                             /    _______    \
+                             |   |       |   |
+                     ASCII   +-> | MIDAS | --+   binary
+                     input ----> |_______| ----> output
+
+
+REPEAT __ field __ text cr        (where text is any character string whose
+                                  first character is not [ and which contains
+                                  no cr)  MIDAS detects this pseudoinstruction,
+                                  determines the numeric value of field (as an
+                                  integer), say n; and passes text back as input
+                                  a total of n times, followed each time by
+                                  cr-lf.
+
+REPEAT __ field __ [text]         Find n, the value of field; then passes
+                                  text to the input n times.  The text may
+                                  contain any characters including [and]; the
+                                  ] which delimits the text is the first that
+                                  matches the opening [ .  No extra characters
+                                  are passed on.  The (outermost) brackets
+                                  surrounding text are not passed on.
+
+                                  17.
+
+
+
+.RPCNT                            This is a symbol whose value depends on
+                                  the innermost repeat in which it is
+                                  contained:  the first time that repeat
+                                  is processed, .RPCNT has the value 0;
+                                  the second time, it has the value 1; etc.
+
+
+The following pseudoinstructions, whose name begin IF, are termed conditional
+
+assembly pseudoinstructions.
+
+
+IF1 __ text cr                    (take text argument like that of REPEAT.)
+IF1 __ [text]                     The text is passed back as input if the
+                                  assembler is performing Pass 1.  Otherwise
+                                  this usage give no characters out.
+
+IF2 __ text cr                    Like IF1, but gives text back to input only
+IF2 __ [text]                     if performing Pass 2.
+
+IFE __ field __ text cr           If the numeric value of field is equal to 0,
+IFE __ field __ [text]            the text is reprocessed as input; otherwise not.
+
+IFG                               Identical to IFE in form; pass text back again
+IFGE                              according as the value of their first
+IFN                               argument is:  greater than; greater than
+IFL                               or equal to; not equal to; less than; less
+IFLE                              than or equal to:  0, respectively.
+
+IFSE __ string1 __ string2 __ text cr
+IFSE __ string1 __ string2 __ [text]
+                                  (text argument as in REPEAT.)  The strings
+                                  are compared character-for-character.
+                                  Each string may contain spaces and commas
+                                  if its first character is open bracket ([),
+                                  in which case that string is ended by the
+                                  matching close bracket (]).  Such outermost
+                                  brackets, if they exist, are not used in
+                                  the string comparison.  The text is then
+                                  processed only if the two fields are
+                                  identical character strings.
+
+ISFN                              Like IFSE, but passes text on only if the
+                                  two fields are not identical strings.
+
+IRP __ A, B, [P, Q, R] <-         The IRP pseudoinstruction takes a triplet of
+                                  arguments, separated by commas:  the first
+                                  two are names, called dummy symbols; the third
+                                  is termed a list.  Each of the dummy symbol
+                                  names need not be given.  The list consists
+                                  of an open bracket, any number of elements
+
+                                  18.
+
+                                  separated by commas, and a closed bracket.
+                                  Each element is a string of zero or more
+                                  characters and lists.  The only character
+                                  excluded is comma; and that may appear if
+                                  in a list, i.e. inside [ ].  For instance:
+                                  IRP  N1, ,[AX,BY,[C,D,E],,] has N1 its
+                                  first dummy symbol, has no second dummy
+                                  symbol, and has a list of five elements:
+                                  AX; BY; [C,D,E]; and two null arguments.
+
+TERMIN <-                         The range of an IRP is the string of
+                                  characters from that IRP to the next
+                                  matching TERMIN, exclusive.  The effect
+                                  of IRP-TERMIN is to pass the range of
+                                  the IRP on as input again a number of
+                                  times equal to the number of elements in
+                                  the list of the IRP.  The first time
+                                  through the range, the first dummy symbol
+                                  of the IRP has the string value of the
+                                  first element of the list, meaning that:
+                                  appearance of that dummy symbol inside the
+                                  range (terminated at each end by ! or any
+                                  non-syllable-constituent) is replaced
+                                  (in effect) by the current string value of
+                                  the dummy symbol.  The second time through
+                                  the range, the first dummy symbol has the
+                                  string value of the second element of the
+                                  list, etc.
+
+   Example:  IRP  A,,[W1,W2,W4] 
+             ADD  3, A
+             TERMIN
+
+   will recirculate the string
+
+             ADD  3, W1
+             ADD  3, W2
+             ADD  3, W4
+
+                                  The second dummy symbol of IRP has, on
+                                  each iteration through the range, the
+                                  string value of the remainder of the list
+                                  yet unused:  for instance, on the third
+                                  iteration of IRP  Q,R,[AND,IOR,XOR,EQV,
+                                  ANDCA] for R would be substituted EQV, ANDCA.
+
+   IRP A,B,[X,Y,Z]C,D,[P,Q,R]E,F,[S,T,U] ... <-
+
+                                  The IRP pseudoinstruction may be followed
+                                  by any number of triplets.  At each iteration,
+
+                                  19.
+
+
+
+
+                                  all the dummy symbols are advanced in their
+                                  respective lists.  The IRP iterates a
+                                  number of times equal to the number of
+                                  elements in the longest list; if one list
+                                  is exhausted before another, both its dummy
+                                  symbols received null string values.
+
+
+IRPC __ A, B, [string] <-         Here A and B are dummy symbols, and string
+                                  is a string of characters ended by the
+                                  first matching ].  On each iteration of
+                                  the IRPC the first dummy symbol takes the
+                                  string value of each successive character
+                                  in string,  and the second dummy symbol has
+                                  the string value of the string to the right
+                                  of that character.  In all other respects
+                                  IRPC is used identically to IRP.
+
+IRPS __ A, B,[syl1 vv syl2 vv ... vv syln]
+                                  Again A and B are dummy symbols; vv is
+                                  any field of syllable separator.  On each
+                                  iteration the first dummy symbol has the strin
+                                  value of successively each of the syli, and th
+                                  second dummy symbol has the string value of th
+                                  vv  to the right of the syllable which is the
+                                  current value of the first dummy symbol.  Othe
+                                  wise IRPS is like IRP and IRPC.
+
+
+
+MACROINSTRUCTIONS
+
+A macroinstruction definition is a syntactic element consisting of:  a define line;
+
+a definition body; and the pseudoinstruction TERMIN.
+
+
+A define line contains in order:  the pseudoinstruction DEFINE; a name, which
+
+is to be defined, called the macro name; and zero or more names which are dummy
+
+symbols; all separated by spaces or commas, except that a dummy symbol may be
+
+preceded or terminated by / or \ instead; the whole extending through the first
+
+<- character, but if that character is cr and the next character is lf, the lf
+
+also is taken as part of the define line.
+
