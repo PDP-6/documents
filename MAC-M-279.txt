@@ -324,7 +324,7 @@ A,B,....,Y,Z               syllable constituents
      ( )                   delimit syllable from without;
                            delimit word within
      < >                    - " -
-                           
+
      [ ]                    - " -
 
       @                    indirect bit;    @ may appear anywhere in a word
@@ -712,7 +712,7 @@ LOC __ word <-              sets the Current Location Counter to the right
 BLOCK __ word <-            sets the Current Location Counter to the right
                             18 bits of the sum of its previous value and the
                             value of word.
-                        
+
 
 END __ word <-              This marks the end of the program, and the right
                             18 bits of the value of the word, and its relocation,
@@ -785,7 +785,7 @@ ASCII jtextj                      where j is any ASCII character, and text is
                                   with ILDB).  If j is a syllable, field, or
 
                                   -13-
-                                  
+
 
 
                                   word-separator other then space,the space
@@ -1074,7 +1074,7 @@ TERMIN <-                         The range of an IRP is the string of
                                   string value of the second element of the
                                   list, etc.
 
-   Example:  IRP  A,,[W1,W2,W4] 
+   Example:  IRP  A,,[W1,W2,W4]
              ADD  3, A
              TERMIN
 
@@ -1150,3 +1150,1533 @@ preceded or terminated by / or \ instead; the whole extending through the first
 
 also is taken as part of the define line.
 
+                                  20.
+
+
+
+
+   The definition body is all text following the define line, up to but not
+
+   including the first unmatched use of TERMIN.  (The TERMIN pseudoinstruction is
+
+   matched by IRP, IRPC, IRPS and DEFINE.)
+
+
+   The effect of macroinstruction definition is that when its TERMIN is encountered
+
+   the macro name becomes defined as a macroinstruction with the string value of the
+
+   definition body.
+
+
+   As this happens, the characters to the left and right of each dummy
+
+   symbol occurrence in the body are examined: each one which is an exclamation
+
+   point is deleted and its place taken by a mark which is invisible; except
+
+   that it deliminates the dummy on that side when dummy symbols are looked for in
+
+   (II) below.
+
+Subsequent to its definition, if a macro name is encountered as a syllable (i.e.
+
+not part of any text argument nor in a macro definition) the following steps
+
+are performed:
+
+                        (I)  the characters following the separator which ends
+
+                             the macro name are read as a list of arguments,
+
+                             separated by comma and the list ended by carriage
+
+                             return or semicolon.  This process, termed the
+
+                             argument scan, associates in order each dummy symbol in
+
+                             the define line of the macroinstruction with the
+
+                             corresponding argument in the argument list.  If
+
+                             in the define line a dummy symbol is ended by /,
+
+                             the scan for its argument is not terminated by
+
+                                  21.
+
+
+
+
+                             comma (which in this case is treated simply as
+
+                             another character in the argument), but by any
+
+                             <- character; if there are dummy symbols to the
+
+                             right of the /, the scan assumes that their
+
+                             arguments are not expressed.  The number of arguments
+
+                             read will in any case not exceed the number of
+
+                             dummy symbols in the macro definition.  Furthermore,
+
+                             if the first character where an argument is
+
+                             expected i [ (open bracket), that argument will
+
+                             consist of all characters following the [, up
+
+                             to the matching ]; the next argument (if any)
+
+                             should follow the ] immediately without an inter-
+
+                             vening comma.  (Right bracket is matched only by
+
+                             left bracket.)  Neither outermost bracket is passed
+
+                             on as part of the argument.  Also if the first
+
+                             character where an argument is expected is \
+
+                             (backslash), the subsequent characters up to
+
+                             but not including the first space or comma are
+
+                             interpreted as a field, and for the argument is
+
+                             supplied a string of digits expressing the value
+
+                             of the word (as an integer) in the Current Radix;
+
+                                  22.
+
+
+
+
+                             of the word (as an integer) in the Current Radix;
+
+                             the next argument immediately follows the space
+
+                             or comma which ended the field.  If fewer arguments
+
+                             are expressed than there are dummy symbols, the
+
+                             arguments given are associated with the leftmost
+
+                             dummy symbols, and the unsatisfied dummy symbols
+
+                             are given string values according to the following
+
+                             rules:
+
+                                1)   If there is not / or \ in the list of dummy
+
+                                     symbols in the define line, all unsatisfied
+
+
+
+                                     dummy symbols get the null string value.
+
+                                2)   If there is one or more / or \ in the list
+
+                                     of dummy symbols in the define line, all
+
+                                     unsatisfied dummy symbols which appear to
+
+                                     the left of the first / or \ get the null
+
+                                     string value, and all unsatisfied dummy
+
+                                     symbols to the right of the first / or \
+
+                                     are given a string value of the form
+
+                                     G00001  or G00002, etc. (called a generated
+
+                                     symbol; a unique generated symbol being
+
+                                     assigned to each such dummy symbol of each
+
+                                     use of any such macroinstruction.
+
+                                  23.
+
+
+
+
+                        (II) The effect to the assembler is that the macro name
+
+                             and argument list are replaced by the body of the
+
+                             definition of that macroinstruction, with each
+
+                             dummy symbol in the body receiving the string value
+
+                             of the corresponding argument.
+
+
+                             For example, if MAC is defined as follow
+
+                                     DEFINE   MAC   E,F <-
+                                     ->| MOVEI   E,3 <-
+                                     ->| IMULB   E,F <-
+                                     TERMIN
+
+                             then MAC 1 , LOC will be seen by the assembler as
+
+                                     ->| MOVEI   1,3 <-
+                                     ->| IMULB   1,LOC <-
+
+
+
+If the argument scan is terminated by the presence of a semicolon, that
+
+semicolon (as well as what follows it)  is passed on to the assembler after
+
+the macroinstruction body.
+
+The characters ! may be used to delimit dummy symbols when the effect of any
+
+other syllable separate is not wanted.  The definition
+
+                            DEFINE   HAC  M,E,F <-
+                            ->| MOVEI   E,3 <-
+                            ->| IMUL!M  E,F <-
+                            TERMIN
+
+enables one to then say HAC B,1, LOC to generate
+
+                            ->| MOVEI   1,3 <-
+                            ->| IMULB   1,LOC <-
+
+or HAC ,1,LOC to give
+
+                            ->| MOVEI   1,3 <-
+                            ->| IMUL    1,LOC <-
+
+                                  24.
+
+
+since the first argument, which extends from the space ending HAC to the next
+
+comma, is null.  Notice that only the single character just to the right of
+
+the macro name is lost;  HAC  ,1,LOC has a first argument consisting of
+
+one space.
+
+     A common use of \ preceding an argument is as follows:
+
+                                DEFINE DISPATCH N,TAB
+                                    JRST  TAB!N
+                                TERMIN
+                                ..=1
+                                REPEAT 30,[DISPATCH \.RPCNT+1,DT
+                                ]
+                                JRST DT1
+                                JRST DT2
+producing                         .
+                                  :
+                                JRST DT0
+
+The argument brackets[] are often used to pass argument lists to a macro or IRP
+
+within the definition of the macro being called:
+
+                                DEFINE   MAPLIST  FN,L
+                                    IRP    A,,[L]
+                                    MAPONE   FN,A
+                                    TERMIN
+                                TERMIN
+
+
+
+
+                                DEFINE MAPONE F,AL
+                                    F AL
+                                TERMIN
+
+
+                                MAPLIST  MAC,[[1,LOC],[1,LOK],[2,LOG]]
+                                   ||
+                                  \||/
+                                   \/
+                                MAPONE  MAC,[1,LOC]
+                                MAPONE  MAC,[1,LOK]
+                                MAPONE  MAC,[2,LOG]
+                                   ||
+                                  \||/
+                                   \/
+                                  MAC  1,LOC
+                                  MAC  1,LOK
+                                  MAC  2,LOG
+
+                                  25.
+
+
+
+The pseudoinstruction  .QUOTE takes the symbol following and passes it on
+
+unchanged, protecting it from being taken as a dummy symbol or as either of
+
+the pseudoinstructions DEFINE and TERMIN.  In all other cases, a name which
+
+is currently a dummy symbol will appear to be replaced by its string value
+
+whenever it appears bounded on each side by non-syllable constituents.  For
+
+example, if A is an accumulator as well as a dummy symbol within a macro
+
+definition, one might need to say
+
+      ADD .QUOTE A,A
+
+to differentiate the two meanings.
+
+
+.TAG __ name vv
+.GO __ name vv
+            may be used within the range of IRP, IRPS or IRPC; or in the
+
+            body of a macro definition.  Only the first 6 characters of
+
+            the name are used.  The .TAG has no effect except to mark
+
+            a place in the IRP etc.  or macro which may be referred to
+
+            by a .GO .  As one of these repeats or a macro is being
+
+            processed, sending characters to the assembler, when a
+
+            .GO is encountered it is not output nor does outputting
+
+            resume right after the .GO ; instead, the range of the
+
+            repeat (or body of the macro) in which the .GO occurred
+
+            is searched for a .TAG with the matching name.  If it is
+
+            found, outputting to the assembler resumes to the right
+
+            of the tag. If it is not found, processing of the current
+
+            repeat or macro is terminated and processing returns to the
+
+            point just beyond  the range of the repeat or just after
+
+            the macro usage;  if this is within an outer repeat or macro
+
+            body, searching for the missing tag is done therein, etc.,
+
+            if a tag is not found anywhere until processing reaches the
+
+            top level (outside all repeats and macro calls), assembling
+
+            then resumes from the point  just after the outermost
+
+            repeat or macro.
+
+
+                                  26.
+
+
+
+
+.GSSET __ no <-   Sets generated-symbol counter to the value of no.
+
+
+
+PSEUDOINSTRUCTIONS PART III
+
+Binary Output Formats.
+
+Storage words are output in on of two modes;  absolute or relocatable.
+
+There are three possible formats for absolute output, named Read-in mode,
+
+Half-word read-in mode, and simple block formats; there is one relocatable
+
+format. The Read-in mode format, if punched on paper tape, can be read by the
+
+RIM Loader (at 20); the simple block format, if on DECtape, can be read by
+
+MACDMP, or HACTRN (the DDT in time sharing) and on paper tape is preceded by a
+
+SBLK loader in RIM format; the relocatable format can be read by the linking
+
+loader.  Virtual quantities, and strorage words with non-zero relocation, may
+
+not occur in absolute mode output.
+
+
+
+RIM <-                       selects read-in mode format output
+
+RIM1 <-                      selects half-word read-in mode format output
+
+SBLK <-                      selects simple block format output
+
+RELOCA <-                    selects relocatable format output and sets
+                             current location counter to 0 with relocation 1.
+
+1PASS <-                     like RELOCA, but also causes a 1-pass assembly.
+
+SBLK is initially selected.
+
+.SLDR <-                     causes output of SBLK loader and enters SBLK format
+
+WORD __ wrd <-               The value of wrd is output as a 36-bit6 word.  In
+                             relocatable and simple block formats, which output
+                             storage words in blocks, any block currently
+                             being accumulated is immediately output so that
+                             wrd appears in the proper place and between blocks.
+
+                                  27.
+
+NOSYMS                       Suppresses output of symbol table which normally
+                             accompanies binary programs.
+.NSTGW                       enables SWD error printout to occur if a storage
+                             word is generated.
+.YSTGW                       disables SWD error printout.  .YSTGW is
+                             initially selected.
+
+Loader Commands.
+
+In relocatable format, certain pseudoinstructions are available to cause special
+
+action by the Linking Loader when encountered.
+
+.LIBRA namelist <-           This must occur before any storage words.  It
+                             tells the loader that the program to follow is
+                             a library program.  The entries in the namelist,
+                             separated by commas, are either names of groups of
+                             names separated by space, +, and -.  An entry is
+                             said to be satisfied by a list of symbols if
+                             either (a) the entry is a name and that name appears
+                             in the list of symbols; or (b) the entry is group
+                             of names, all of which names preceded by space or +
+                             are in the list of symbols, and none of which names
+                             preceded by - are.  The Linking Loader will omit to
+                             load a library program unless one or more entries is
+                             its namelist is satisfied by the list of undefined
+                             global symbols used in programs already loaded.
+
+.LIFS namelist <-            Load If Seen.
+
+.ELDC <-                     End Load Time Conditional.  Any storage words
+                             appearing between .LIFS and .ELDC are passed on
+                             to the loader which will load them only if one or
+                             more entries in the namelist are satisfied by the
+                             list of defined and undefined global symbols used
+                             in programs already loaded.
+
+                             Note:  .ELDC should always be followed by a location
+                             assignment (LOC pseudoinstruction).  Sometimes if
+                             there is a series of load-time conditionals with no
+                             intervening non-conditional matter the LOC need
+                             only be used after the last. Notice that LOC  $."
+                             may be used to continue loading storage words
+                             into subsequent locations where the effect of the
+                             load-time conditionals is not necessarily known.
+                             Load Time Conditionals may be nested.
+
+                                  28.
+
+
+
+
+.LIFE __ word <-             Load Time Conditionals on Value.  Any one of
+
+.LIFLE __ word <-            these starts a range which is ended by .ELDC.
+
+.LIFL __ word <-             In each case the word is evaluated by the Loader,
+
+.LIFG __ word <-             and the storage words in the range are loaded
+
+.LIFGE __ word <-            only if the value of word is respectively
+
+.LIFN __ word <-             = 0, <= 0, < 0, > 0, != 0.
+
+
+
+.LNKOT                       if output is relocatable format, causes
+                             immediate output of all accumulated linking
+                             pointers.
+
+.LOP __ f1 __ f2 __ f3 <-    like .OP, but occurs when encountered by
+                             loader in relocatable format.  (f1 is an
+                             instruction, f2 is taken as the contents of
+                             the specified accumulator, and f3 as the
+                             contents of the specified memory location).
+                             Has no value; loader sets variable .LVAL1
+                             to resultant accumulator content, and .LVAL2
+                             to resultant memory contents.  (Initially,
+                             .LVAL1 and .LVAL2 have the value 0).
+
+.GLOBA __ nam1 __ nam2 ... <-
+                             has same effect as appearance of each name
+                             followed by a ", but generates no storage
+                             words.
+
+.LIBRAQ __ nam1 __ nam2 ... <-
+                             will output the given names to the relocatable
+                             loader such that the loader "sees" them in this
+                             program when queried by load-time conditionals.
+                             No definition is given to the loader, and a use
+                             of .LIBRE does not cause the names to be seen
+                             at all by the assembler.
+
+
+
+ERROR MESSAGES
+
+      An error messages typed out by MIDAS is in the following form:
+
+SYM+NN   MMM   L   XXX   CCC
+
+                                  29.
+
+
+
+SYM+NN is the current location in terms of symbols; MMM is the current location
+
+in octal; L is the depth in macro-instructions; XXX is the offending syllable
+
+(if any); CCC is a 3-character error code, as listed below.  An asterisk * in the
+
+following listing marks a fatal error, which MIDAS will not proceed past.
+
+      [All undefined symbol errors treat the symbol as having value 0, relocation 0]
+
+
+ USW                          undefined symbol in a storage word
+
+ USC                          undefined symbol in a constant word
+
+ USP                          undefined symbol in a parameter assignment
+                                         (to right of =)
+
+ USR                          undefined symbol in count field of REPEAT
+
+ UCD                          undefined symbol in test field of conditional
+                                         assembly
+
+ USE                          undefined symbol in END pseudoinstruction
+
+ USL                          undefined symbol in LOC pseudoinstruction
+
+ USB                          undefined symbol in BLOCK pseudoinstruction
+
+ USS                          undefined symbol in numeric field of SQUOZE
+                                          pseudoinstruction
+
+ USM                          undefined symbol in field following \ in
+                                          macroinstruction argument
+
+ USO                          undefined symbol in OFFSET pseudoinstruction
+
+ MDT                          multiply defined tag.  A variable, defined symbol
+                                          or macroinstruction appeared to the
+                                          left of : and was not redefined.
+
+ MDV                          multiply defined variable.  A defined symbol or
+                                          macroinstruction appeared followed
+                                          by ' , and was NOT redefined.
+
+ RES                          reserved.  An attempt was made to redefine a
+                                          pseudoinstruction.  It was NOT redefined.
+
+                                  30.
+
+
+
+ ILT                          illegal tag.  Something other than a symbol appeared
+                                          to the left of : and no action was taken.
+
+ IPA                          illegal parameter assignment.  Something other than
+                                          a symbol appeared to the left of = and
+                                          no action was taken.
+
+ QPA                          questionable parameter assignment.  A macro name
+                                          or pseudoinstruction appeared to the
+                                          left of = and WAS redefined.
+
+ IEQ                          illegal EQUALS.  One of the arguments was not a
+                                          name, no action was taken.
+
+ MGT                          multiply defined tag at virtual location.
+
+ N6B                          not sixbit.  A non-printing character appeared in
+                                         the text argument of SIXBIT or to the
+                                         right of ' .
+
+ EPO                          exponent overflow.  Floating point number too large.
+
+ XSG                          lost significance.  Fixed point number too large.
+
+ UFM                          unused format of fields in a word.  The word
+                                         is taken as 0.
+
+ SWD                          (turned on by .NSTGW) storage word generated.
+
+ NOS                          no separator.  A(B)C or ASCII /X/3, for instance
+
+ ILC                          illegal closing.  Attempt to match < with ] or
+                                         [ with )
+
+ ILA                          virtual quantity used in absolute assembly
+
+ IRA                          non-zero relocation used in absolute assembly
+
+ IRL                          illegal relocation.  A field with relocation 1
+                                         was put other than with its right end
+                                         between bits 17 and 18 or 35 and 36.
+
+                                  31.
+
+
+
+ IRC                          illegal relocation count.  A field had relocation
+                                         other than +1 or 0.
+
+ IGS                          illegal virtual.  A virtual quantity was put
+                                         other than with its right end between
+                                         bits 12 and 13, 17 and 18, 30 and 31,
+                                         or 35 and 36.
+
+ IMY                          illegal multiplication of virtual quantities
+
+ IDC                          division by virtual quantity
+
+ PNI                          . used when location indefinite, 0 assumed
+
+ CLI                          : used at indefinite location
+
+ LAI                          location assignment contains illegal relocation
+
+*TCA                          too many constant word areas
+
+*TVA                          too many variable areas
+
+*TMC                          too many constant words in one area
+
+*CLD                          constant word are location differs from
+                                         previous pass
+
+*VLD                          variable area location differs from previous pass
+
+*CRD                          relocation of constant word are differs from
+                                         previous pass
+
+*VRD                          relocation of variable area differs from previous
+                                         pass
+
+ CRI                          relocation of constant word area illegal
+
+*TMA                          too many dummy symbols in macro definition
+
+*TMD                          too much arguments (strings too long) at use
+                                         of macroinstruction
+
+*MCE                          macroinstruction capacity exceeded
+
+*SCE                          storage capacity exceeded
+
+ ILF                          illegal format.  Programmer's intent unclear.
+
+*IAE                          internal assembler error
+
+*ILM                          assembler made illegal memory reference
+
+                                  32.
+
+
+
+
+OPERATING INSTRUCTIONS NON TIME-SHARING
+
+With MACDMP, load from the MACDMP SYSTEM tape the dump-mode file MIDAS.
+
+(There may exist also a file MIDAS NEW.  It may have new features, or fix
+
+errors in old.  Its use for assemblies instead of the MIDAS file would be
+
+appreciated as an in vivo check-out of the new version.)  When MIDAS is started,
+
+it will accept a string of commands from the on-line Teletype, ended by two
+
+successive ALTMODE characters.  The effect is the same whether all the commands
+
+are in one string or they are each in a separate string delimited by ALT MODES.
+
+( $ will be used as a symbol for ALT MODE.)  In normal use, one should give
+
+commands in the following order:  (1)  select an input file;  (2) select an
+
+output medium; (3) direct the assembly; (4) file the output  (numbers (1) and
+
+(2) may be interchanged).
+
+
+                        (1)   Input Selection:  the command nERname1 name2 $
+
+                              will select for input the file named name1 name2
+
+                              or the DECtape on unit n.  If the ER command is
+
+                              not given, input is selected from the paper tape
+
+                              reader or online-teletype.  (The reader is checked
+
+                              initially, and after each character is typed in.)
+
+                        (2)   Output Selection:  the command mEI will select for
+
+                              output on the DECtape on unit m.  If the EI command
+
+                              is not given, output will be on paper tape.
+
+                                  33.
+
+
+
+                        (3)   Assembly:  the command A causes the program to
+
+                              be assembled.  This is the command normally used;
+
+                              it is composed of five parts which can be commanded
+
+                              separately.  In order, these are
+
+                                 I    Initialize.  Forget all symbols, macros, etc.
+
+                                      except those in the Initial Symbol Table;
+
+                                      set the Current Radix to 8; set the Current
+
+                                      Location Counter to 100 with relocation 0;
+
+                                      select SBLK output format; clear all input and
+
+                                      output buffers.
+
+                                 O    pass one. Read the input file and assemble
+
+                                      it, defining symbols and macros, developing
+
+                                      values of storage words, etc.  No output is
+
+                                      done unless the 1PASS pseudoinstruction was
+
+                                      used in the program.
+
+                                 S    punch SBLK loader if SBLK is output format.
+
+                                 T    pass two.  If 1PASS was not used, read
+
+                                      the input file and assemble it, outputting
+
+                                      storage words (and in the relocatable format,
+
+                                      various data concerning virtual usages) to
+
+                                      the output device previously selected.  If
+
+                                      PASS1 was used, do none of this but instead
+
+                                      check if any symbols were used which are
+
+                                      still undefined.
+
+                                  34.
+
+
+
+                                 L    symbols.  Output a symbol table (unless
+
+                                      NOSYMS was used).
+
+                        (4)   Output Filing:  the command EF name1 name2 $
+
+                                      will file DECtape output in SBLK mode for
+
+                                      absolute-mode output or RELOC mode for
+
+                                      relocatable mode output.  There is no need
+
+                                      for this if output was to paper tape, or if
+
+                                      the assembled program is not going to be used
+
+                                      (for instance, due to a large number of
+
+                                      assembly errors).
+
+When one program has been assembled, another may be without reloading MIDAS.
+
+To leave MIDAS and return to MACDMP, use the command D.
+
+
+
+There are also several character which may be typed in and take effect
+
+immediately, without being part of command strings.  These are various letters
+
+with the CTRL key hold:
+
+      A                      type out all input characters processed by MIDAS.
+                             This includes expansions of macros, IRP, etc.
+
+      Z                      turn off typeout.
+
+      C      (bell)          Quit current activities and wait for typed-in
+                             commands.  It is advisable to go to MACDMP and
+                             load a fresh MIDAS if you have Quit.
+
+      E                      Turn on line printer output.
+
+      B                      Turn off line printer output.
+
+      R                      Commence output to paper tape.
+
+                                  35.
+
+
+
+      I                      Cease paper-tape output.
+
+      W                      Commence DECtape output.
+
+      V                      Cease output to DECtape.
+
+      Q                      resume reading from DECtape.
+
+      S                      interrupt reading DECtape.
+
+OPERATING INSTRUCTIONS TIME SHARING
+
+To DDT type MIDAS  H  (alternatively, any other command which will load
+
+and start the program TS MIDAS on device SYS).  Into MIDAS type a command
+
+line comprised of (a) the destination file designation; (b) the character
+
+<- (shift 0); (c) the source file designation; (d) a carriage return. A
+
+file designation consists of : a) (optional) a "system name" ended by
+
+; (semicolon).  If no system is specified, the name the user gave as he
+
+logged in is assumed. b) a device name ended by : (colon). c) the file
+
+name,  consisting of two subnames separated by a space.  If a system name
+
+or device name is not specified  in the destination description, the
+
+name used in the source description will be taken.  If no file name is
+
+given tin the destination description, one will be assumed whose first
+
+subname is the first subname3 of the source file, and whose second subname
+
+is a BIN.  When the carriage return is typed, MIDAS will read the
+
+designated source file, and output the assembled result and file it
+
+accordingly to the destination file designation.  The title (on each
+
+pass), PRINTX output, etc. and error messages will appear on the user's
+
+console.  When finished, MIDAS will do a Value Return to DDT.
+
+                                  36.
+
+                           Radix-50 SQUOZE Code
+
+This is the form in which symbol names are represented internally and in symbol
+
+table output.
+
+Character            Value(octal)      |     Character         Value(octal)
+                                       |
+   null                0               |         j               24
+                                       |
+    0                  1               |         k               25
+                                       |
+    1                  2               |         l               26
+                                       |
+    2                  3               |         m               27
+                                       |
+    3                  4               |         n               30
+                                       |
+    4                  5               |         o               31
+                                       |
+    5                  6               |         p               32
+                                       |
+    6                  7               |         q               33
+                                       |
+    7                 10               |         r               34
+                                       |
+    8                 11               |         s               35
+                                       |
+    9                 12               |         t               36
+                                       |
+    A                 13               |         u               37
+                                       |
+    B                 14               |         v               40
+                                       |
+    C                 15               |         w               41
+                                       |
+    D                 16               |         x               42
+                                       |
+    E                 17               |         y               43
+                                       |
+    F                 20               |         z               44
+                                       |
+    G                 21               |         .               45
+                                       |
+    H                 22               |         $               46
+                                       |
+    I                 23               |         %               47
+
+                                  37.
+
+
+
+Say the name is ABCDEF; the Squoze code is
+
+      20 + 50 * < 17 + 50 * < 16 + 50 * < 15 + 50 * < 14 + 50 * 13 > > > >
+
+i.e. the last character is least significant in the radix-50 (octal represen-
+
+tation.  If the name has fewer than 6 characters, the last characters are
+
+taken as null.
+
+
+
+The radix-50 scheme leaves 4 free bits at the high-order end of a 36-bit
+
+word; these are used as Code Bits to describe the type and relocation of the
+
+symbol.
+
+                                  38.
+
+
+
+                        Initial Symbol Table
+
+
+
+Symbol               Value          |        Symbol            Value
+                    (octal)         |                         (octal)
+                                    |
+1PASS                pseudo         |        AOJ              (340000)
+ADD                 (270000)        |        AOJA             (344000)
+ADDB                (273000)        |        AOJE             (342000)
+ADDI                (271000)        |        AOJG             (347000)
+ADDM                (272000)        |        AOJGE            (345000)
+AND                 (404000)        |        AOJL             (341000)
+ANDB                (407000)        |        AOS              (350000)
+ANDCA               (410000)        |        AOSA             (354000)
+ANDCAB              (413000)        |        AOSE             (352000)
+ANDCAI              (411000)        |        AOSG             (357000)
+ANDCAM              (412000)        |        AOSGE            (355000)
+ANDCB               (440000)        |        AOSL             (351000)
+ANDCBB              (443000)        |        AOSLE            (353000)
+ANDCBI              (441000)        |        AOSN             (356000)
+ANDCBM              (442000)        |        APR               0
+ANDCM               (420000)        |        ASCII             pseudo
+                                    |        ASCIZ             pseudo
+ANDCMB              (423000)        |        ASH              (240000)
+ANDCMI              (421000)        |        ASHC             (244000)
+ANDCMM              (422000)        |        BLKI             (700000) pseudo
+ANDI                (405000)        |        AOJLE            (343000)
+ANDM                (406000)        |        AOJN             (346000)
+AOBJN               (253000)        |        BLKO             (700100) pseudo
+                                    |        BLOCK             pseudo
+AOBJP               (252000)        |        BLT              (251000)
+------------------------------------+----------------------------------
+CAI                 (300000)        |        CONSZ            (700300) pseudo
+CAIA                (304000)        |        CR               (114000)
+CAIE                (302000)        |        DATAI            (700040) pseudo
+CAIG                (307000)        |        DATAO            (700140) pseudo
+CAIGE               (305000)        |        DC                200
+CAIL                (301000)        |        DCSA              300
+CAILE               (303000)        |        DCSB              304
+                                    |        DECIMA            pseudo
+                                    |        DEFINE            pseudo
+CAIN                (306000)        |        DIS               130
+CAM                 (310000)        |        DIV              (234000)
+                                    |        DIVB             (237000)
+                                    |        DIVI             (235000)
+CAMA                (314000)        |        DIVM             (236000)
+CAME                (312000)        |        DPE              (137000)
+                                    |        DPBI             (136000)
+
+                                  39.
+
+
+
+Symbol               Value          |        Symbol            Value
+                                    |
+                                    |
+CAMG                 (317000)       |        END               pseudo
+CAMGE                (315000)       |        EQUALS            pseudo
+CAML                 (311000)       |        EQV               (444000)
+CAMLE                (313000)       |        EQVB              (447000)
+CAMN                 (316000)       |        EQVI              (445000)
+CLEAR                (400000)       |        EQVM              (446000)
+                                    |        EXCH              (250000)
+CLEARB               (403000)       |        EXP               pseudo
+CLEARI               (401000)       |        EXPUNG            pseudo
+CLEARM               (402000)       |        FAD               (140000)
+CONI                 (700240)pseudo |        FADB              (143000)
+CONO                 (700200)pseudo |        FADL              (141000)
+CONSO                (700340)pseudo |        FADM              (142000)
+CONSTA                pseudo        |
+------------------------------------+----------------------------------
+FADR                 (144000)       |        FSBM              (152000)
+FADRB                (147000)       |        FSBR              (154000)
+FADRL                (145000)       |        FSBRB             (157000)
+FADRM                (146000)       |        FSBRL             (155000)
+FDV                  (170000)       |        FSBRM             (156000)
+FDVB                 (173000)       |        FSC               (132000)
+FDVL                 (171000)       |        HLL               (500000)
+FDVM                 (172000)       |        HLLE              (530000)
+FDVR                 (174000)       |        HLLEI             (531000)
+FDVRB                (177000)       |        HLLEM             (532000)
+FDVRL                (175000)       |        HLLES             (533000)
+FDVRM                (176000)       |        HLLI              (501000)
+FMP                  (160000)       |        HLLM              (502000)
+FMPB                 (163000)       |        HLLO              (520000)
+FMPL                 (161000)       |        HLLOI             (521000)
+FMPM                 (162000)       |        HLLOM             (522000)
+FMPR                 (164000)       |        HLLOS             (523000)
+FMPRB                (167000)       |        HLLS              (503000)
+FMPRL                (165000)       |        HLLZ              (510000)
+FMPRM                (166000)       |        HLLZI             (511000)
+FSB                  (150000)       |        HLLZM             (512000)
+FSBS                 (153000)       |        HLLZS             (513000)
+FSBL                 (151000)       |        HLR               (544000)
+------------------------------------+----------------------------------
+HLRE                 (574000)       |        HRLOI             (525000)
+HLREI                (575000)       |        HRLOM             (526000)
+HLREM                (576000)       |        HRLOS             (527000)
+HLRES                (577000)       |        HRLS              (507000)
+HLRI                 (545000)       |        HRLZ              (514000)
+HLRM                 (546000)       |        HRLZI             (515000)
+HLRO                 (564000)       |        HRLZM             (516000)
+HLROI                (565000)       |        HRLZS             (517000)
+
+                                  40.
+
+
+
+Symbol               Value          |        Symbol            Value
+                                    |
+                                    |
+HLROM                (566000)       |        HRR              (540000)
+HLROS                (567000)       |        HRRE             (570000)
+HLRS                 (547000)       |        HRREI            (571000)
+HLRZ                 (554000)       |        HRREM            (572000)
+HLRZI                (555000)       |        HRRES            (573000)
+HLRZM                (556000)       |        HRRI             (541000)
+HLRZS                (557000)       |        HRRM             (542000)
+HRL                  (504000)       |        HRRO             (560000)
+HRLE                 (534000)       |        HRROI            (561000)
+HRLEI                (535000)       |        HRROM            (562000)
+HRLEM                (536000)       |        HRROS            (563000)
+HRLES                (537000)       |        HRRS             (543000)
+HLRI                 (505000)       |        HRRZ             (550000)
+HRLM                 (506000)       |        HRRZI            (551000)
+HRLO                 (524000)       |        HRRZM            (552000)
+------------------------------------+---------------------------------
+HRRZS                (553000)       |        IORB             (437000)
+                                    |        IORI             (435000)
+IBP                  (133000)       |        IORM             (436000)
+                                    |        IBP              pseudo
+IDIV                 (230000)       |        IRPC             pseudo
+                                    |        IRPS             pseudo
+IDVIB                (233000)       |        JFCL             (255000)
+IDIVI                (231000)       |        JRA              (267000)
+IDIVM                (232000)       |        JRST             (254000)
+IDPB                 (136000)       |        JSA              (266000)
+IF1                  pseudo         |        JSP              (265000)
+IF2                  pseudo         |        JSR              (264000)
+IFE                  pseudo         |        JUMP             (320000)
+IFG                  pseudo         |        JUMPA            (324000)
+IFGE                 pseudo         |        JUMPE            (322000)
+IFL                  pseudo         |        JUMPG            (327000)
+IFLE                 pseudo         |        JUMPGE           (325000)
+IFN                  pseudo         |        JUMPL            (321000)
+IFSE                 pseudo         |        JUMPLE           (323000)
+IFSN                 pseudo         |        JUMPN            (326000)
+ILDB                 134000)        |        LDB              (135000)
+                                    |        LDBI             (134000)
+IMUL                 (220000)       |        LPT              124
+                                    |        LOC              pseudo
+IMULB                (223000)       |        LSH              (242000)
+IMULI                (221000)       |        LSHC             (246000)
+IMULM                (222000)       |        MOVE             (200000)
+IOR                  (434000)       |        MOVEI            (201000)
+------------------------------------+---------------------------------
+MOVEM                (202000)       |        POP              (262000)
+MOVES                (203000)       |        POPJ             (263000)
+MOVM                 (214000)       |        PRINTC           pseudo
+
+                                  40.
+
+Symbol               Value          |        Symbol            Value
+                                    |
+                                    |
+MOVMI                (215000)       |        SKIPA          (334000)
+MOVMM                (216000)       |        SKIPE          (332000)
+MOVMS                (217000)       |        SKIPG          (337000)
+MOVN                 (210000)       |        SKIPGE         (335000)
+MOVNI                (211000)       |        TDC            (650000)
+MOVNM                (212000)       |        TDCA           (654000)
+MOVNS                (213000)       |        TDCE           (652000)
+MOVS                 (204000)       |
+MOVSI                (205000)       |        PRINTX         pseudo
+MOVSM                (206000)       |        PTP            103
+MUL                  (224000)       |        PTR            104
+                                    |        PUSH           (261000)
+MULB                 (227000)       |        PUSHJ          (260000)
+MULI                 (225000)       |        RADIX          pseudo
+MULM                 (226000)       |        RELOCA         pseudo
+NOSYMS               pseudo         |        REPEAT         pseudo
+NULL                 pseudo         |        RIM            pseudo
+OCTAL                pseudo         |        RIML           pseudo
+OFFSET               pseudo         |        ROT            (241000)
+ORCA                 (454000)       |        ROTC           (245000)
+ORCAB                (457000)       |        SBLK           pseudo
+ORCAI                (455000)       |        SETA           (424000)
+ORCAM                (456000)       |        SETAB          (427000)
+ORCB                 (470000)       |        SETAI          (425000)
+ORCBB                (473000)       |        SETAM          (426000)
+ORCBI                (471000)       |        SETCA          (450000)
+ORCBM                (472000)       |        SETCAB         (453000)
+ORCM                 (464000)       |        SETCAI         (451000)
+------------------------------------+---------------------------------
+ORCMB                (467000)       |        SKIPL          (331000)
+ORCMI                (465000)       |        SKIPLE         (333000)
+ORCMM                (466000)       |        SKIPN          (336000)
+PI                     4            |        SOJ            (360000)
+SETCAM               (452000)       |        SOJA           (364000)
+SETCM                (460000)       |        SOJE           (362000)
+SETCMB               (463000)       |        SOJG           (367000)
+SETCMI               (461000)       |        SOJGE          (365000)
+SETCMM               (462000)       |        SOJL           (361000)
+SETM                 (414000)       |        SOJLE          (363000)
+SETMB                (417000)       |        SOJN           (366000)
+SETMI                (415000)       |        SOS            (370000)
+SETMM                (416000)       |        SOSA           (374000)
+SETO                 (474000)       |        SOSE           (372000)
+SETOB                (477000)       |        SOSG           (377000)
+SETOI                (475000)       |        SOSGE          (375000)
+SETOM                (476000)       |        SOSL           (371000)
+SETZ                 (400000)       |        SOSLE          (373000)
+SETZB                (403000)       |        SOSN           (376000)
+SETZI                (401000)       |        SQUOZE         pseudo
+SETZM                (402000)       |        SUB            (274000)
+SIXBIT               pseudo         |        SUBB           (277000)
+SKIP                 (330000)       |        SUBI           (275000)
+                                             SUBM           (276000)
+                                             TLNA           (605000)
+                                             TLNE           (603000)
+                                             TLNN           (607000)
+
+                                  42.                                 NOTE:
+
+                                                                      In the time-sharing
+                                                                      version there are a
+                                                                      great many additional
+                                                                      initial symbols,
+                                                                      for example, system
+Symbol               Value          |        Symbol            Value  calls, status bits
+                                    |                                 etc.  This list
+                                    |                                 changes frequently
+TDCN                 (656000)       |        TLO            (661000)  in accordance with
+TDN                  (610000)       |        TLOA           (665000)  the development of
+TDNA                 (614000)       |        TLOE           (663000)  the time-sharing
+TDNE                 (612000)       |        TLON           (667000)  system, so no
+TDNN                 (616000)       |        TLZ            (621000)  attempt has been
+TDO                  (670000)       |        TLZA           (625000)  made to include
+TDOA                 (674000)       |        TLZE           (623000)  them here. To avoid
+TDOE                 (672000)       |        TLZN           (627000)  conflice with these
+TDON                 (676000)       |        TRC            (640000)  symbols, bear in
+TDZ                  (630000)       |        TRCA           (644000)  mind that each such
+TDZA                 (634000)       |        TRCE           (642000)  symbol begins with
+TDZE                 (632000)       |        TRCN           (646000)  a period.
+TDZN                 (636000)       |        TRN            (600000)
+TERMIN               pseudo         |        TRNA           (604000)
+TITLE                pseudo         |        TRNE           (602000)
+TLC                  (641000)       |        TRNN           (606000)
+TLCA                 (645000)       |        TRO            (660000)
+TLCE                 (643000)       |        TROA           (664000)
+TCLN                 (647000)       |        TROE           (662000)
+TLN                  (601000)       |        TRON           (666000)
+------------------------------------+-------------------------------
+TRZ                  (620000)       |        UTS            214
+TRZA                 (624000)       |        VARIAB         (pseudo
+TRZE                 (622000)       |        WORD           (pseudo
+TRZN                 (626000)       |        XCT            (256000)
+TSC                  (651000)       |        XOR            (430000)
+TSCA                 (655000)       |        XORB           (433000)
+TSCE                 (653000)       |        XORI           (431000)
+TSCN                 (657000)       |        XORM           (432000)
+TSN                  (611000)       |        XWD            pseudo
+TSNA                 (615000)       |        XWORD          pseudo
+TSNE                 (613000)       |        .              Current Location
+TSNN                 (617000)       |        .ASCII         pseudo
+TSO                  (671000)       |        .BEGIN         pseudo
+TSOA                 (675000)       |        .ELDC          pseudo
+                                    |        .END           pseudo
+TSOE                 (673000)       |        .FNAM1         pseudo(t-s only)
+TSON                 (677000)       |        .FNAME2        pseudo(t-s only)
+TSZ                  (631000)       |        .FORMA         pseudo
+TSZA                 (635000)       |        .GLOBA         pseudo
+TSZE                 (633000)       |        .GO            pseudo
+TSZN                 (637000)       |        .GSSET         pseudo
+TTY                  120            |        .LIBRQ         pseudo
+TWX                  310            |        .LNKOT         pseudo
+                                    |        .LOP           pseudo
+UTC                  210            |        .NSTGW         pseudo
+                                    |        .TAG           pseudo
+                                    |        .TYPE          pseudo
+                                    |        .YSTGW         pseudo
+
+                                  43.
+
+
+
+
+                              Binary Formats
+
+               +---------------------------------------------+
+               |                                             |
+               |      RIM      (loaded by loader at 20)      |
+               |                                             |
+               |                   DATAI PTR, ADDRESS        |
+               |                                             |
+               |                   CONTENTS                  |
+               |                                             |
+               |                   DATAI PTR, ADDRESS        |
+               |                       :                     |
+               |                       :                     |
+               |                   CONTENTS                  |
+               |                                             |
+               |                   JRST   START              |
+               |                                             |
+               +---------------------------------------------+
+
+
+
+               +---------------------------------------------+
+               |                                             |
+               |      RIM1     (loaded by loader at 20)      |
+               |                                             |
+               |                   HRRI     17, RIGHTHALF    |
+               |                                             |
+               |                   HRRM     17, ADDRESS      |
+               |                                             |
+               |                   HRRI     17, LEFTHALF     |
+               |                                             |
+               |                   HRLM     17, ADDRESSLF    |
+               |                                             |
+               |                   HRRI     17, RIGHTHALF    |
+               |                                             |
+               |                   HRRM     17, ADDRESS      |
+               |                     :                       |
+               |                     :                       |
+               |                   HRRI     17, LEFTHALF     |
+               |                                             |
+               |                   HRLM     17, ADDRESS      |
+               |                                             |
+               |                   JRST    START             |
+               |                                             |
+               +---------------------------------------------+
+
+                                  44.
+
+
+
+SBLK
+
+
+          (1)  SBLK loader in RIM format:  Read Left-to-Right
+
+                            * numbers are octal *
+
+DATAI PTR, 0                                  CONO  PTR,60
+
+DATAI PTR, 1                                  JSP   14,30
+
+DATAI PTR, 2                                  DATAI  PTR,16
+
+DATAI PTR, 3                                  MOVE  15,16
+
+DATAI PTR, 4                                  JUMPGE  16,16
+
+DATAI PTR, 5                                  JSP   14,30
+
+DATAI PTR, 6                                  DATAI  PTR,(16)
+
+DATAI PTR, 7                                  ROT   15,1
+
+DATAI PTR, 10                                 ADD   15,(16)
+
+DATAI PTR, 11                                 AOBJN  16,5
+
+DATAI PTR, 12                                 MOVEI  14,33
+
+DATAI PTR, 13                                 JRST   30
+
+DATAI PTR, 30                                 CONSO  PTR,10
+
+DATAI PTR, 31                                 JRSTT  30
+
+DATAI PTR, 32                                 JRST  (14)
+
+DATAI PTR, 33                                 DATAI  PTR,16
+
+DATAI PTR, 34                                 CAMN  15,16
+
+DATAI PTR, 35                                 JUMPA   1
+
+DATAI PTR, 36                                 JRST   4,0
+
+JRST 1
+
+                                  45.
+
+
+
+
+          (2)  Blocks read by SBLK loader
+
+
+                        +----
+The checksum            |                   (,-n) first address       ; header word
+                        |
+for each data           |                   contents of 1st addr.       \
+                        |                                                |
+block is                |                   contents of (1st addr.+1)    | n  data
+                        |                       :                        |    words
+computed as             |                       :                        |
+                        |                   contents of (1st addr.+n-1) /
+follows:  take          |
+                        |     logical       checksum
+the header              |      block            :
+                        |  +---     ---+        :
+word; rotate            |  |   MIDAS   |       any number of data blocks
+                        |  |  punched  |        :
+it to the               |  |   blocks  |        :
+               PROGRAM <   |   have    |    JRST     start            ; just block
+left one bit            |  |  n <= 40' |                                to start
+                        |  +---     ---+                                of program
+and add the             |
+                        |
+first data              |
+                        |
+word; rotate            |
+                        |
+the result to           |
+                        |
+the left one            |
+                        |
+bit and add             |
+                        |
+the second              |
+                        |
+data word; etc.         |
+                        |
+After the nth           |
+                        |
+data word nt            |
+                        |
+result should           |
+                        |
+equal the               |
+                        |
+checksum.               |
+                        +----
+
+                                  46.
+
+
+                        +----
+The address             |              /    (,-m)0                    ; header word
+                        |             |
+in the header           |             |     SQUOZE+(040000)     \
+                        |             |                          |    1st symbol
+word of each            |             |                          |
+                        |             |     value               /
+data block              |             |
+                        |             |     SQUOZE+(040000)     \
+of the symbol           |             |                          |    2nd symbol
+                        |             |                          |
+table should            |             |     value               /
+                        |             |        :
+be ignored.             |      block <         :
+                        |             |        :
+                SYMBOL <              |        :
+                TABLE   |             |     SQUOZE+(040000)     \
+                        |             |                          |    (m/2)th symbol
+Notice that             |             |     value                |
+                        |             |                         /
+a JRST                  |             |
+                        |             \     checksum
+instruction             |                       :
+                        |                       :
+is positive.            |                     any number of blocks
+                        |                      :
+                        |                   JRST    0               ; end of symbols
+                        +----
+
+                                  47.
+
+
+
+                          Suggested Symbolic Format
+
+
+
+The format-free nature of the MIDAS symbolic language allows a greate deal of
+
+typographic variety, but som eof this variety should generally be given up
+
+for the sake of readability of one's program.  The suggestions which follow
+
+are not hard-and-fast rules, but in most cases will represent a consensus as
+
+to good practice.
+
+
+
+
+     (1)  A storage word should appear on a line indented one tab stop.
+
+     (2)  An address tag (symbol followed by colon) should not be indented.
+
+     (3)  All address tags referring to a given location should appear on
+
+          separate lines, with the contents of that location indented once
+
+          on the same line as the last (or only) tag.
+
+     (4)  Blank lines (redundant carraige returns, line feeds, etc.) may
+
+          occur wherever useful to demarcate parts of a routine.
+
+     (5)  The entire typescript should be divided into pages (by form-feed
+
+          characters).  The logical divisions of the program should coincide
+
+          with page divisions.  Althrough a page will hold up to about 60.
+
+          lines, it is good practice whenever convenient to put only 45. or
+
+          50. lines per page.
+
+     (6)  Within a storage word, use space rather than tab as a field delimiter.
+
+     (7)  Close all ( [ and < groups with ) ] and >.
+
+     (8)  When a comment is applied to a storage word, put one tab before then ;.
+
+     (9)  Pseudoinstructions and macro names which generate one or more storage
+
+          words should generally be treated like storage words.
+
+                                  48.
+
+
+
+
+
+    (10)  END and TITLE are usually not indented.
+
+    (11)  With the possible exception of 0, accumulators should as a rule
+
+          be referred to symbolically, with such symbols defined at the
+
+          beginning of the program.
+
+    (12)  Generally it is a good idea to put a parameter assignment (use of =)
+
+          at the earliest point in the program where its right side is defined.
+
+
+
+
+
+EXAMPLE
+
+The following page is an example of coding in the MIDAS language.  (It is the
+
+first page of a program which uses the TC camera.)  It demonstrates many,
+
+though by no means all, of the features of MIDAS.  The FIX macro is indeed a
+
+sequence of instructions which will convert a floating-point number to fixed-
+
+point.
+
+TITLE FIND THAT BALL
+
+RELOCATABLE
+
+MSCHN=2
+TVHCHN=3
+TVVCHN=4
+TVCCHN=5
+TVA=770
+MSC=760
+LPDL=100
+
+DEFINE BALLP N,NO
+       SETCM Y,X
+       JUMPE Y,NO
+REPEAT N=1,[      LSH X,1
+       ANDCM Y,X
+]
+       JUMPE Y,NO
+       TLNN Y,777000
+       JRST .+3
+       LSH Y,-11
+       TLO Y,011000
+       FSC Y,26
+       FAD Y,Y
+       LSH 7,-27
+TERMIN
+
+DEFINE FIX
+       MULI X,400
+       TSC X,X
+       ASH X+1,-243(X)
+       TERMIN
+
+P"=1
+Y"=4   ; Y
+T"=5   ; T
+X"=3   ; X
+D=2
+E=6
+DING:  JRST 4,THRU
+
+LOOK:  SETOM LCK1
+       SETOM LCK2
+       CLEARM TAKP
+       MOVE T,TAKN
+       CLEARM LETAKE
+       CLEARM PNTSS
+       SETOM TVIDLE
+       SETOM CANCEL
+       CLEARM MSTIME
+       CONO MSC,MSCHN
+       JRST LOOKA
